@@ -5,17 +5,21 @@ import json
 HOST = "127.0.0.1"  # The server's hostname or IP address
 PORT = 65432  # The port used by the server
 
-URL = '/products/0'
-
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect((HOST, PORT))
 
 def send_req(path: str):
-    msg = bytes(f'GET {URL}', 'utf-8')
+    msg = bytes(f'GET {path}', 'utf-8')
     client.send(msg)
 
     return str(client.recv(4096))
 
+
+def parse_page(path: str):
+    res = send_req(path)
+    html = bs(str(res), 'html.parser')
+
+    return html.select('h1')[0].text.strip()
 
 def scrape(path: str, save_as_json=False):
     res = send_req(path)
@@ -35,4 +39,7 @@ def scrape(path: str, save_as_json=False):
     return data
 
 
-print(scrape(URL, save_as_json=True))
+print(scrape('/products/1', save_as_json=True))
+# print(parse_page('/'))
+# print(parse_page('/about'))
+# print(parse_page('/contacts'))
