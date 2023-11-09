@@ -2,10 +2,11 @@ import pika, sys, os, time, threading
 from scraper import Scraper
 
 class Worker:
-    def __init__(self, queue_name, name, db):
+    def __init__(self, queue_name, name, db, db_queue):
         self.queue_name = queue_name
         self.name = name
         self.db = db
+        self.db_queue = db_queue
 
     def start(self):
         try:
@@ -25,7 +26,8 @@ class Worker:
                 s = Scraper()
                 parsed_data = s.parse_page(url)
                 
-                self.db.insert(parsed_data)
+                # self.db.insert(parsed_data)
+                self.db_queue.put(parsed_data)
                 # print(parsed_data)
 
                 print('Done.')

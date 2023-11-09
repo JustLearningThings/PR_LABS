@@ -4,13 +4,16 @@ from scraper import Scraper
 from worker import Worker
 from database import Database
 
+from queue import Queue
+
 QUEUE_NAME = '999_task'
 
 def start_worker(queue_name, worker_name):
     w = Worker(
         queue_name=queue_name,
         name=worker_name,
-        db=db,)
+        db=db,
+        db_queue=db_queue)
     w.start()
 
 
@@ -23,6 +26,19 @@ def start_workers(num_workers):
 # connect and empty the database
 db = Database()
 db.empty()
+
+def database_worker(queue: Queue):
+    while True:
+        data = queue.get()
+
+        if data is None:
+            break
+
+        db.insert(data)
+
+db_queue = Queue() # thread-safe queue
+db_thread = threading.Thread(target=database_worker, args=(db_queue,))
+db_thread.start()
 
 # extract the number of threads from the flag
 threads = 1
@@ -56,6 +72,7 @@ channel.queue_declare(
     durable=True    
 )
 
+i = 1
 for url in urls:
     channel.basic_publish(
         exchange='',
@@ -65,6 +82,9 @@ for url in urls:
             delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE
         )
     )
+    print(f'Sent {i}/{len(urls)} URLs ({i/len(urls)*100}%).')
+    i+=1
+
 
 print(f'Tasks distributed to {threads} workers.')
 
